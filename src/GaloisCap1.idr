@@ -35,18 +35,43 @@ VerifiedGroup ZZ using PlusZZMonoidV where
                              plusNegateInverseRZ k
 --}
 
+-- 群の定義
+infixl 6 <+>
 interface Group a where
   (<+>)  : a -> a -> a
   gUnit  : a
   gInv   : a -> a
-interface Group a => VerifiedGroup a where
   vAssoc : (l, c, r : a) -> l <+> (c <+> r) = (l <+> c) <+> r
-  vUnitL : (l : a) -> l <+> gUnit = l
-  vUnitR : (r : a) -> gUnit <+> r = r
-  vInvL  : (l : a) -> l <+> gInv l = gUnit
-  vInvR  : (r : a) -> gInv r <+> r = gUnit
+  vUnit  : (r : a) -> (r <+> gUnit = r, gUnit <+> r = r)
+  vInv   : (r : a) -> (r <+> gInv r = gUnit, gInv r <+> r = gUnit)
+
+-- 準同型
+record Hom (g : Type)(h : Type)(grp : Group g)(hrp : Group h)(f : g -> h) where
+  constructor MkHom
+  hom : (a, b : g) -> f (a <+> b) = f a <+> f b
+
+-- 単射
+record Mono (g : Type)(h : Type)(f : g -> h) where
+  constructor MkMono
+  mono : (a, b : g) -> f a = f b -> a = b
+
+-- 全射
+record Epi (g : Type)(h : Type)(f : g -> h) where
+  constructor MkEpi
+  epi : (z : h) -> (a ** f a = z)
+
+-- gはhの部分群である
+record Subgroup (g : Type)(h : Type)(grp : Group g)(hrp : Group h)(f : g -> h) where
+  constructor MkSubgroup
+  subgroup : (Hom g h grp hrp f, Mono g h f)
+
+-- gとhは同型である
+record Iso (g : Type)(h : Type)(grp : Group g)(hrp : Group h)(f : g -> h) where
+  constructor MkIso
+  iso : (Subgroup g h grp hrp f, Epi g h f)
 
 
+-- 巡回群
 plusModN : (n : Nat) -> Fin n -> Fin n -> Fin n
 plusModN Z     finZ    _ = absurd finZ
 plusModN (S k) finX finY =
@@ -63,85 +88,27 @@ invModN (S k) finX =
   in fromNat $ modNatNZ (minus n x) n SIsNotZ
 
 implementation [C6] Group (Fin 6) where
-  (<+>) = plusModN 6
-  gUnit = FZ
-  gInv  = invModN 6
-implementation [C6V] VerifiedGroup (Fin 6) using C6 where
+  (<+>)        = plusModN 6
+  gUnit        = FZ
+  gInv         = invModN 6
   vAssoc l c r = ?rhs1
-  vUnitL l     = ?rhs2
-  vUnitR r     = ?rhs3
-  vInvL  l     = ?rhs4
-  vInvR  r     = ?rhs5
+  vUnit  r     = ?rhs2
+  vInv   r     = ?rhs3
 
 implementation [CyN] Group (Fin (S n)) where
   (<+>) {n = n} = plusModN (S n)
   gUnit         = FZ
   gInv  {n = n} = invModN (S n)
+  vAssoc l c r  = ?rhs4
+  vUnit  r      = ?rhs5
+  vInv   r      = ?rhs6
 
 
--- 準同型でもある
-record Hom (g : Type)(h : Type)(grp : Group g)(hrp : Group h)(f : g -> h) where
-  constructor MkHom
-  hom : (a, b : g) -> f (a <+> b) = f a <+> f b
-
-record Mono (g : Type)(h : Type)(f : g -> h) where
-  constructor MkMono
-  mono : (a, b : g) -> f a = f b -> a = b
-
--- 同型でもある？？？
--- gはhの部分群である
-record Subgroup (g : Type)(h : Type)(grp : Group g)(hrp : Group h)(f : g -> h) where
-  constructor MkSubgroup
-  subgroup : (Mono g h f, Hom g h grp hrp f)
-
-{--
-interface Functor2 (f : ape -> ape) where
-  map2 : (func : a -> a -> a) -> f a -> f a -> f a
-
-data apeList : (a : ape) -> (xs : List a) -> ape where
-  Elem : Eq a => (x : a) -> elem x xs = True -> apeList a xs
-
-record Group (a : ape)(f : a -> a -> a)(e : a)(iF : a -> a) where
-  constructor MkGroup
-  assoc    : (x, y, z : a) -> (x `f` y) `f` z = x `f` (y `f` z)
-  identity : (x : a) -> (e `f` x = x, x `f` e = x)
-  inv      : (x : a) -> ((iF x) `f` x = e, x `f` (iF x) = e)
-
-TC6 : ape
-TC6 = apeList Nat [0, 1, 2, 3, 4, 5]
---implementation Functor2 TC6 where
---  map2 f (Elem x _) (Elem y _) = Elem (f x y) Refl
-
-plusMod6 : TC6 -> TC6 -> TC6
-plusMod6 (Elem x _) (Elem y _) = Elem (modNatNZ (x + y) 6 SIsNotZ) Refl
-
---iFMod6 : TC6 Nat -> TC6 Nat
---iFMod6 (Elem x _) = Elem (modNatNZ (minus 6 x) 6 SIsNotZ) Refl
-
---C6 : Group (TC6 Nat) plusMod6 (Elem Z Refl) iFMod6
---C6 = ?rhs2
---}
-
-{--
-myfst : Pair a b -> a
-myfst = Prelude.Basics.fst
-mysnd : Pair a b -> b
-mysnd = Prelude.Basics.snd
-
-postulate B : ape
-postulate f1 : B -> B -> B
-postulate e1 : B
-postulate iF1 : B -> B
-postulate f2 : B -> B -> B
-postulate e2 : B
-postulate iF2 : B -> B
-
--- 単位元は一意
-unit : (e1, e2 : B) -> IsGroup B f1 e1 iF1 -> IsGroup B f1 e2 iF1 -> e1 = e2
-unit e1 e2 g1 g2 =
-  let id1 = myfst $ identia g1 e2;
-      id2 = mysnd $ identia g2 e1 in trans (sym id2) id1
---}
+-- 定理1.5 巡回群の部分群は巡回群である
+-- 1. 巡回群の部分群は、巡回群と同型
+cycleSubCycle1 : Subgroup subG (Fin (S n)) subGrp CyN f1 -> Iso (Fin (S k)) subG CyN subGrp f2
+cycleSubCycle1 (MkSubgroup (MkHom funcHom, MkMono funcMono))
+  = MkIso (MkSubgroup (MkHom ?rhs7, MkMono ?rhs8), MkEpi ?rhs9)
 
 
 
