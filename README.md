@@ -24,16 +24,14 @@ Idrisで形式化をおこなう（努力目標）。
 ## 3 正六角形を回転させよう
 ### 定義1.3 群の定義
 ```idris
+infixl 6 <+>
 interface Group a where
   (<+>)  : a -> a -> a
   gUnit  : a
   gInv   : a -> a
-interface Group a => VerifiedGroup a where
   vAssoc : (l, c, r : a) -> l <+> (c <+> r) = (l <+> c) <+> r
-  vUnitL : (l : a) -> l <+> gUnit = l
-  vUnitR : (r : a) -> gUnit <+> r = r
-  vInvL  : (l : a) -> l <+> gInv l = gUnit
-  vInvR  : (r : a) -> gInv r <+> r = gUnit
+  vUnit  : (r : a) -> (r <+> gUnit = r, gUnit <+> r = r)
+  vInv   : (r : a) -> (r <+> gInv r = gUnit, gInv r <+> r = gUnit)
 ```
 - 群の台集合の元が、値(1とか)の場合と、演算(30度回転とか)の場合がある。  
 混乱の元。  
