@@ -4,7 +4,7 @@ module GaloisCap1
 import Data.Fin
 
 %default total
--- %auto_implicits on
+-- %auto_implicits off
 
 {--
 /libs/prelude/Prelude/Algebra.idr
@@ -90,14 +90,6 @@ invModN (S k) finX =
       x = toNat finX
   in fromNat $ modNatNZ (minus n x) n SIsNotZ
 
-implementation [C6] Group (Fin 6) where
-  (<+>)        = plusModN 6
-  gUnit        = FZ
-  gInv         = invModN 6
-  vAssoc l c r = ?rhs1
-  vUnit  r     = ?rhs2
-  vInv   r     = ?rhs3
-
 implementation [CyN] Group (Fin (S n)) where
   (<+>) {n = n} = plusModN (S n)
   gUnit         = FZ
@@ -105,72 +97,22 @@ implementation [CyN] Group (Fin (S n)) where
   vAssoc l c r  = ?rhs4
   vUnit  r      = ?rhs5
   vInv   r      = ?rhs6
+-- ----------------------------------
 
-{--
+
+cyclicToCyclic : (n, k : Nat) -> Fin (S n) -> Fin (S (mult k (S n) + n))
+cyclicToCyclic n Z     = id --idにするところがミソ
+cyclicToCyclic n (S k) = \_ =>
+--  let y = S (n + myMult (S k) (S n)) in fromMaybe ?rhs14 $ natToFin y y
+  let y = S (mult (S k) (S n) + n) in fromNat y
+
 -- 定理1.5 巡回群の部分群は巡回群である
--- 1. 巡回群の部分群は、巡回群と同型
--- LTE k n
-cycleSubCycle1 : (n, k : Nat)
-  -> Subgroup subG (Fin (S n)) subGrp CyN f1 -> LTE k n
-    -> Iso (Fin (S k)) subG CyN subGrp f2
-cycleSubCycle1 Z Z (MkSubgroup (MkHom funcHom) (MkMono funcMono)) prfLTE
-  = MkIso (MkSubgroup (MkHom ?rhs7) (MkMono ?rhs8)) (MkEpi ?rhs9)
-cycleSubCycle1 Z (S k) (MkSubgroup (MkHom funcHom) (MkMono funcMono)) prfLTE
-  = absurd prfLTE --MkIso (MkSubgroup (MkHom ?rhs7) (MkMono ?rhs8)) (MkEpi ?rhs9)
+-- 部分群の位数(S n)が、元の群の位数(S k)*(S n)の約数である事を仮定した
+-- S (mult k (S n) + n) = (S k) * (S n)
+cyclicSubCyclic : (n : Nat)
+  -> ((k : Nat) -> Subgroup (Fin (S n)) (Fin (S (mult k (S n) + n))) subGrp CyN (cyclicToCyclic n k))
+    -> Iso (Fin (S n)) (Fin (S n)) subGrp CyN (cyclicToCyclic n Z)
+cyclicSubCyclic n fSubG = MkIso (fSubG Z) (MkEpi (\z => (z ** Refl)))
 
-cycleSubCycle1 (S n) k (MkSubgroup (MkHom funcHom) (MkMono funcMono)) prfLTE
-  = MkIso (MkSubgroup (MkHom ?rhs7_2) (MkMono ?rhs8_2)) (MkEpi ?rhs9_2)
-
-
-fZZ : subG -> Fin 1
-fZZ _ = FZ
-
-cycleSubCycle2_Z_Z :
-  Subgroup subG (Fin (S Z)) subGrp CyN fzz -> LTE Z Z
-    -> Hom subG (Fin (S Z)) subGrp CyN fzz
-cycleSubCycle2_Z_Z (MkSubgroup prfHom (MkMono funcMono)) prfLTE
-  = prfHom
-
-cycleSubCycle2 : (k, n : Nat)
-  -> Subgroup subG (Fin (S n)) subGrp CyN f1 -> LTE k n
-    -> Iso subG (Fin (S k)) subGrp CyN f2
-cycleSubCycle2 Z Z prfSubgroup prfLTE
-  = MkIso (MkSubgroup ?rhs10 (MkMono ?rhs11)) (MkEpi ?rhs12)
-cycleSubCycle2 (S k) Z _ prfLTE
-  = absurd prfLTE --MkIso (MkSubgroup (MkHom ?rhs10) (MkMono ?rhs11)) (MkEpi ?rhs12)
-
-cycleSubCycle2 k (S n) (MkSubgroup (MkHom funcHom) (MkMono funcMono)) prfLTE
-  = MkIso (MkSubgroup (MkHom ?rhs13) (MkMono ?rhs14)) (MkEpi ?rhs15)
---cycleSubCycle2 (S k) (S n) prfSubgroup (LTESucc prfLTE)
---  = cycleSubCycle2 k n prfSubgroup prfLTE
---}
-
-{--
-cycleSubCycle2 : (k, n : Nat)
-  -> Subgroup (Fin (S k)) (Fin (S n)) subGrp CyN f -> LTE k n
-    -> Iso (Fin (S k)) (Fin (S k)) subGrp CyN Prelude.Basics.id
-cycleSubCycle2 k n (MkSubgroup (MkHom funcHom) (MkMono funcMono)) prfLTE
-  = MkIso (MkSubgroup (MkHom prfFuncHom) (MkMono (\_, _, prf => prf))) (MkEpi (\z => (z ** Refl)))
-    where
-      prfFuncHom : (a : Fin (S k)) -> (b : Fin (S k)) -> a <+> b = plusModN (S k) a b
-      prfFuncHom a b = ?rhs7
---}
-
-cycleSubCycle2 : (n, k : Nat)
-  -> Subgroup (Fin (S n)) (Fin ((S k)*(S n))) subGrp CyN f
-    -> Iso (Fin (S n)) (Fin (S n)) subGrp CyN Prelude.Basics.id
-cycleSubCycle2 n Z (MkSubgroup (MkHom funcHom) (MkMono funcMono))
-  = MkIso (MkSubgroup (MkHom ?rhs7) (MkMono (\_, _, prf => prf))) (MkEpi (\z => (z ** Refl)))
-cycleSubCycle2 n (S k) (MkSubgroup (MkHom funcHom) (MkMono funcMono))
-  = MkIso (MkSubgroup (MkHom prfFuncHom) (MkMono (\_, _, prf => prf))) (MkEpi (\z => (z ** Refl)))
-    where
-      prfFuncHom : (a : Fin (S n)) -> (b : Fin (S n)) -> a <+> b = plusModN (S n) a b
-      prfFuncHom a b = ?rhs8
-
-
-cycleSubCycle3 : (n, k : Nat)
-  -> Hom (Fin (S n)) (Fin ((S k)*(S n))) CyN CyN f
-cycleSubCycle3 n Z     = MkHom ?rhs9
-cycleSubCycle3 n (S k) = let hoge = hom $ cycleSubCycle3 n k in MkHom ?rhs10
 
 
