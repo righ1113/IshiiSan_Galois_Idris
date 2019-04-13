@@ -15,8 +15,9 @@
 を理解する  
 
 # Idris
-Idrisで形式化をおこなう（努力目標）。  
+- Idrisで形式化をおこなう（努力目標）。  
 => 本の全ての定理を、Idrisで証明するのは難しいと判断  
+- Idrisでの証明は、本の証明とは全く違うものになる  
 
 # 第1章　「整数」
 ## 1 最大公約数を求める
@@ -39,7 +40,16 @@ interface Group a where
 ## 4 群が同じということ
 ## 5 一部の元でも群になる
 ### 定理1.5 巡回群の部分群は巡回群である
-- ☆目下の目標。  
+```idris
+-- 定理1.5 巡回群の部分群は巡回群である
+-- 部分群の位数(S n)が、元の群の位数(S k)*(S n)の約数である事を仮定した
+-- S (mult k (S n) + n) = (S k) * (S n)
+cyclicSubCyclic : (n : Nat)
+  -> ((k : Nat) -> Subgroup (Fin (S n)) (Fin (S (mult k (S n) + n))) subGrp CyN (cyclicToCyclic n k))
+    -> Iso (Fin (S n)) (Fin (S n)) subGrp CyN (cyclicToCyclic n Z)
+cyclicSubCyclic n fSubG = MkIso (fSubG Z) (MkEpi (\z => (z ** Refl)))
+```
+
 ## 6 2つの群から群を作る
 ## 7 掛け算だって群になる！
 ## 8 (Z/p^nZ)*は直積で書けるか？
