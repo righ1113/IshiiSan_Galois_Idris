@@ -35,19 +35,20 @@ VerifiedGroup ZZ using PlusZZMonoidV where
                              plusNegateInverseRZ k
 --}
 
--- ----- 群の定義 -----
+-- 群の定義
 infixl 6 <+>
 interface Group a where
   (<+>)  : a -> a -> a
   gUnit  : a
   gInv   : a -> a
   vAssoc : (l, c, r : a) -> l <+> (c <+> r) = (l <+> c) <+> r
-  vUnit  : (r : a) -> (r <+> gUnit = r, gUnit <+> r = r)
-  vInv   : (r : a) -> (r <+> gInv r = gUnit, gInv r <+> r = gUnit)
+  vUnit  : (c : a) -> (c <+> gUnit = c, gUnit <+> c = c)
+  vInv   : (c : a) -> (c <+> gInv c = gUnit, gInv c <+> c = gUnit)
 
 -- 準同型
 record Hom (g : Type)(h : Type)(grp : Group g)(hrp : Group h)(f : g -> h) where
   constructor MkHom
+  -- 左辺の<+>はgrpのもの、右辺の<+>はhrpのもの
   hom : (a, b : g) -> f (a <+> b) = f a <+> f b
 
 -- 単射
@@ -94,19 +95,19 @@ implementation [CyN] Group (Fin (S n)) where
   (<+>) {n = n} = plusModN (S n)
   gUnit         = FZ
   gInv  {n = n} = invModN (S n)
-  vAssoc l c r  = ?rhs4
-  vUnit  r      = ?rhs5
-  vInv   r      = ?rhs6
+  vAssoc l c r  = ?rhs1
+  vUnit    c    = ?rhs2
+  vInv     c    = ?rhs3
 -- ----------------------------------
 
 
 cyclicToCyclic : (n, k : Nat) -> Fin (S n) -> Fin (S (mult k (S n) + n))
-cyclicToCyclic n Z     = id --idにするところがミソ
+cyclicToCyclic n Z     = id -- idにするところがミソ
 cyclicToCyclic n (S k) = \_ =>
 --  let y = S (n + myMult (S k) (S n)) in fromMaybe ?rhs14 $ natToFin y y
   let y = S (mult (S k) (S n) + n) in fromNat y
 
--- 定理1.5 巡回群の部分群は巡回群である
+-- ◆定理1.5 巡回群の部分群は巡回群である
 -- 部分群の位数(S n)が、元の群の位数(S k)*(S n)の約数である事を仮定した
 -- S (mult k (S n) + n) = (S k) * (S n)
 cyclicSubCyclic : (n : Nat)
@@ -114,5 +115,61 @@ cyclicSubCyclic : (n : Nat)
     -> Iso (Fin (S n)) (Fin (S n)) subGrp CyN (cyclicToCyclic n Z)
 cyclicSubCyclic n fSubG = MkIso (fSubG Z) (MkEpi (\z => (z ** Refl)))
 
+
+-- 既約剰余類群
+-- 元かどうかは、外からのBool値で判断する
+data FinBool : (n : Nat) -> Type where
+  Fb : Fin n -> Bool -> FinBool n
+
+multModN : (n : Nat) -> Fin n -> Fin n -> Fin n
+multModN Z     finZ    _ = absurd finZ
+multModN (S k) finX finY =
+  let n = S k;
+      x = toNat finX;
+      y = toNat finY
+  in fromNat $ modNatNZ (x * y) n SIsNotZ
+
+multModNFb : (n : Nat) -> FinBool n -> FinBool n -> FinBool n
+multModNFb Z     (Fb finZ _    ) _               = absurd finZ
+multModNFb (S _) (Fb _    False) _               = Fb FZ False
+multModNFb (S _) (Fb _    True ) (Fb _    False) = Fb FZ False
+multModNFb (S k) (Fb finX True ) (Fb finY True ) = Fb (multModN (S k) finX finY) True
+
+invModNFb : (n : Nat) -> FinBool n -> FinBool n
+invModNFb Z     (Fb finZ _    ) = absurd finZ
+invModNFb (S _) (Fb _    False) = Fb FZ False
+invModNFb (S k) (Fb finX True ) = Fb (invModN (S k) finX) True
+
+implementation [Mgm] Group (FinBool (S n)) where
+  (<+>) {n = n} = multModNFb (S n)
+  gUnit         = Fb FZ True
+  gInv  {n = n} = invModNFb (S n)
+  vAssoc l c r  = ?rhs4
+  vUnit    c    = ?rhs5
+  vInv     c    = ?rhs6
+-- ----------------------------------
+
+-- 群の直積
+implementation [GPr] (Group a, Group b) => Group (a, b) where
+  (x, y) <+> (z, u) = (x <+> z, y <+> u)
+  gUnit             = (gUnit, gUnit)
+  gInv (x, y)       = (gInv x, gInv y)
+  vAssoc l c r      = ?rhs7
+  vUnit    c        = ?rhs8
+  vInv     c        = ?rhs9
+-- ----------------------------------
+
+
+hogeF : FinBool (S (mult k (S n) + n)) -> (Fin (S k), Fin (S n))
+-- ◆定理1.9 (Z/(p^e)(q^f)Z)* ≡ (Z/(p^e)Z)* × (Z/(q^f)Z)*
+theorem1_9 : (k, n : Nat)
+  -> Group (Fin (S k)) -> Group (Fin (S n))
+    -> Iso (FinBool (S (mult k (S n) + n))) (Fin (S k), Fin (S n)) Mgm GPr hogeF
+
+-- ◆定理1.18 (Z/2^nZ)*は巡回群の直積に同型である
+-- ◆定理1.19 (Z/奇素数p^nZ)*は巡回群の直積に同型である
+
+-- ◆定理1.20 既約剰余類群は巡回群の直積に同型である
+--mgmProduct :
 
 
