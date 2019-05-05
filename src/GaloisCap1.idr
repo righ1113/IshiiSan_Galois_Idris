@@ -160,16 +160,49 @@ implementation [GPr] (Group a, Group b) => Group (a, b) where
 -- ----------------------------------
 
 
-hogeF : FinBool (S (mult k (S n) + n)) -> (Fin (S k), Fin (S n))
 -- ◆定理1.9 (Z/(p^e)(q^f)Z)* ≡ (Z/(p^e)Z)* × (Z/(q^f)Z)*
-theorem1_9 : (k, n : Nat)
-  -> Group (Fin (S k)) -> Group (Fin (S n))
-    -> Iso (FinBool (S (mult k (S n) + n))) (Fin (S k), Fin (S n)) Mgm GPr hogeF
+-- S (mult k (S n) + n) = (S k) * (S n)
+-- S (mult p (S (pred (power (S p) e))) + (pred (power (S p) e))) = power (S p) (S e)
+---power (S p) (S e)
+---  = mult (S p) $ power (S p) e
+---  = mult (S p) $ (S (pred (power (S p) e)))
+---  = S (mult p (S (pred (power (S p) e))) + (pred (power (S p) e)))
+-- S (mult p (power (S p) e) + (pred (power (S p) e)))
+-- S (mult q (power (S q) f) + (pred (power (S q) f)))
+-- S (mult (mult p (power (S p) e) + (pred (power (S p) e))) (S (mult q (power (S q) f) + (pred (power (S q) f)))) + (mult q (power (S q) f) + (pred (power (S q) f))))
+fFinBoolToGPr : (FinBool (S (mult (mult p (power (S p) e) + (pred (power (S p) e))) (S (mult q (power (S q) f) + (pred (power (S q) f)))) + (mult q (power (S q) f) + (pred (power (S q) f))))))
+  -> (Fin (S (mult p (power (S p) e) + (pred (power (S p) e)))), Fin (S (mult q (power (S q) f) + (pred (power (S q) f)))))
+theorem1_9 : (p, q, e, f : Nat)
+  -> Group (Fin (S (mult p (power (S p) e) + (pred (power (S p) e)))))
+    -> Group (Fin (S (mult q (power (S q) f) + (pred (power (S q) f)))))
+      -> Iso
+           (FinBool (S (mult (mult p (power (S p) e) + (pred (power (S p) e))) (S (mult q (power (S q) f) + (pred (power (S q) f)))) + (mult q (power (S q) f) + (pred (power (S q) f))))))
+           (Fin (S (mult p (power (S p) e) + (pred (power (S p) e)))), Fin (S (mult q (power (S q) f) + (pred (power (S q) f))))) Mgm GPr fFinBoolToGPr
 
 -- ◆定理1.18 (Z/2^nZ)*は巡回群の直積に同型である
+-- (Z/2^nZ)* ≡ (Z/2^(n-2)Z) × (Z/2Z)
+fTheorem1_18 : FinBool (S (mult (S Z) (S (pred (power (S (S Z)) (S n)))) + (pred (power (S (S Z)) (S n)))))
+  -> (Fin (S n), Fin (S (S Z)))
+theorem1_18 : (n : Nat)
+  -> Group (Fin (S n))
+    -> Group (Fin (S (S Z)))
+      -> Iso
+           (FinBool (S (mult (S Z) (S (pred (power (S (S Z)) (S n)))) + (pred (power (S (S Z)) (S n))))))
+           (Fin (S n), Fin (S (S Z))) Mgm GPr fTheorem1_18
+
+fTheorem1_19 : FinBool (S (mult (S (S p)) (S (pred (power (S (S (S p))) (S n)))) + (pred (power (S (S (S p))) (S n)))))
+  -> (Fin (S (mult (S (S p)) (S (pred (power (S (S (S p))) n))) + (pred (power (S (S (S p))) n)))), Fin (S (S p)))
 -- ◆定理1.19 (Z/奇素数p^nZ)*は巡回群の直積に同型である
+theorem1_19 : (p, n : Nat)
+  -> Group (Fin (S (mult (S (S p)) (S (pred (power (S (S (S p))) n))) + (pred (power (S (S (S p))) n)))))
+    -> Group (Fin (S (S p)))
+      -> Iso
+           (FinBool (S (mult (S (S p)) (S (pred (power (S (S (S p))) (S n)))) + (pred (power (S (S (S p))) (S n))))))
+           (Fin (S (mult (S (S p)) (S (pred (power (S (S (S p))) n))) + (pred (power (S (S (S p))) n)))), Fin (S (S p))) Mgm GPr fTheorem1_19
 
 -- ◆定理1.20 既約剰余類群は巡回群の直積に同型である
 --mgmProduct :
+
+
 
 
