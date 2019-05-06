@@ -162,37 +162,74 @@ implementation [GPr] (Group a, Group b) => Group (a, b) where
 
 
 -- ◆定理1.9 (Z/(p^e)(q^f)Z)* ≡ (Z/(p^e)Z)* × (Z/(q^f)Z)*
-fFinBoolToGPr : (FinBool ((power (S p) (S e))*(power (S q) (S f))))
-  -> (Fin (power (S p) (S e)), Fin (power (S q) (S f)))
+fFinBoolToGPr : (p, q, e, f : Nat)
+  -> (FinBool ((power (S (S p)) (S (S e)))*(power (S (S (S q))) (S f))))
+    -> (FinBool (power (S (S p)) (S (S e))), FinBool (power (S (S (S q))) (S f)))
 theorem1_9 : (p, q, e, f : Nat)
-  -> Group (Fin (power (S p) (S e)))
-    -> Group (Fin (power (S q) (S f)))
+  -> (Group (FinBool (power (S (S p)) (S (S e))))
+    -> Group (FinBool (power (S (S (S q))) (S f)))
       -> Iso
-           (FinBool ((power (S p) (S e))*(power (S q) (S f))))
-           (Fin (power (S p) (S e)), Fin (power (S q) (S f))) Mgm GPr fFinBoolToGPr
+           (FinBool ((power (S (S p)) (S (S e)))*(power (S (S (S q))) (S f))))
+           (FinBool (power (S (S p)) (S (S e))), FinBool (power (S (S (S q))) (S f))) Mgm GPr (fFinBoolToGPr p q e f))
 
 -- ◆定理1.18 (Z/2^nZ)*は巡回群の直積に同型である
 -- (Z/2^nZ)* ≡ (Z/2^(n-2)Z) × (Z/2Z)
-fTheorem1_18 : (FinBool (power 2 (S (S n)))) -> (FinBool (power 2 n), Fin 2)
-theorem1_18 : (n : Nat)
-  -> Group (FinBool (power 2 n))
-    -> Group (Fin 2)
-      -> Iso
-           (FinBool (power 2 (S (S n))))
-           (FinBool (power 2 n), Fin 2) Mgm GPr fTheorem1_18
+fTheorem1_18 : (e : Nat)
+  -> (FinBool (power 2 (S (S e)))) -> (Fin (power 2 e), Fin 2)
+theorem1_18 : (e : Nat)
+  -> (Group (Fin (power 2 e))
+      -> Group (Fin 2)
+        -> Iso
+            (FinBool (power 2 (S (S e))))
+            (Fin (power 2 e), Fin 2) Mgm GPr (fTheorem1_18 e))
 
 -- ◆定理1.19 (Z/奇素数p^nZ)*は巡回群の直積に同型である
 -- (Z/p^nZ)* ≡ (Z/p^(n-1)Z) × (Z/(p-1)Z)
-fTheorem1_19 : (FinBool (power (S p) (S n))) -> (FinBool (power (S p) n), Fin p)
-theorem1_19 : (p, n : Nat)
-  -> Group (FinBool (power (S p) n))
-    -> Group (Fin p)
-      -> Iso
-           (FinBool (power (S p) (S n)))
-           (FinBool (power (S p) n), Fin p) Mgm GPr fTheorem1_19
+fTheorem1_19 : (q, f : Nat)
+  -> (FinBool (power (S (S (S q))) (S n))) -> (Fin (power (S (S (S q))) n), Fin p)
+theorem1_19 : (q, f : Nat)
+  -> (Group (Fin (power (S (S (S q))) f))
+      -> Group (Fin (S (S q)))
+        -> Iso
+            (FinBool (power (S (S (S q))) (S f)))
+            (Fin (power (S (S (S q))) f), Fin (S (S q))) Mgm GPr (fTheorem1_19 q f))
 
 -- ◆定理1.20 既約剰余類群は巡回群の直積に同型である
---mgmProduct :
+mgmProduct : (p, q, e, f : Nat)
+  -> Either ((Group (FinBool (power (S (S p)) (S (S e))))
+      -> Group (FinBool (power (S (S (S q))) (S f)))
+        -> Iso
+            (FinBool ((power (S (S p)) (S (S e)))*(power (S (S (S q))) (S f))))
+            (FinBool (power (S (S p)) (S (S e))), FinBool (power (S (S (S q))) (S f))) Mgm GPr (fFinBoolToGPr p q e f)),
+      (Group (Fin (power 2 e))
+      -> Group (Fin 2)
+        -> Iso
+            (FinBool (power 2 (S (S e))))
+            (Fin (power 2 e), Fin 2) Mgm GPr (fTheorem1_18 e)),
+      (Group (Fin (power (S (S (S q))) f))
+      -> Group (Fin (S (S q)))
+        -> Iso
+            (FinBool (power (S (S (S q))) (S f)))
+            (Fin (power (S (S (S q))) f), Fin (S (S q))) Mgm GPr (fTheorem1_19 q f))
+     )
+     ((Group (FinBool (power (S (S p)) (S (S e))))
+      -> Group (FinBool (power (S (S (S q))) (S f)))
+        -> Iso
+            (FinBool ((power (S (S p)) (S (S e)))*(power (S (S (S q))) (S f))))
+            (FinBool (power (S (S p)) (S (S e))), FinBool (power (S (S (S q))) (S f))) Mgm GPr (fFinBoolToGPr p q e f)),
+      (Group (Fin (power (S (S (S p))) e))
+      -> Group (Fin (S (S p)))
+        -> Iso
+            (FinBool (power (S (S (S p))) (S e)))
+            (Fin (power (S (S (S p))) e), Fin (S (S p))) Mgm GPr (fTheorem1_19 p e)),
+      (Group (Fin (power (S (S (S q))) f))
+      -> Group (Fin (S (S q)))
+        -> Iso
+            (FinBool (power (S (S (S q))) (S f)))
+            (Fin (power (S (S (S q))) f), Fin (S (S q))) Mgm GPr (fTheorem1_19 q f))
+     )
+mgmProduct Z     q e f = Left  ((theorem1_9 Z q e f), (theorem1_18 e), (theorem1_19 q f))
+mgmProduct (S p) q e f = Right ((theorem1_9 (S p) q e f), (theorem1_19 (S p) e), (theorem1_19 q f))
 
 
 
