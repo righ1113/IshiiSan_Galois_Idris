@@ -91,20 +91,19 @@ invModN (S k) finX =
       x = toNat finX
   in fromNat $ modNatNZ (minus n x) n SIsNotZ
 
-implementation [CyN] Group (Fin (S n)) where
-  (<+>) {n = n} = plusModN (S n)
-  gUnit         = FZ
-  gInv  {n = n} = invModN (S n)
-  vAssoc l c r  = ?rhs1
-  vUnit    c    = ?rhs2
-  vInv     c    = ?rhs3
+implementation [CyN] Group (Fin n) where
+  (<+>) {n = n}     = plusModN n
+  gUnit {n = Z    } = idris_crash "no constructor!"
+  gUnit {n = (S n)} = FZ
+  gInv  {n = n}     = invModN n
+  vAssoc l c r      = ?rhs1
+  vUnit  r          = ?rhs2
+  vInv   r          = ?rhs3
 -- ----------------------------------
-
 
 cyclicToCyclic : (n, k : Nat) -> Fin (S n) -> Fin (S (mult k (S n) + n))
 cyclicToCyclic n Z     = id -- idにするところがミソ
 cyclicToCyclic n (S k) = \_ =>
---  let y = S (n + myMult (S k) (S n)) in fromMaybe ?rhs14 $ natToFin y y
   let y = S (mult (S k) (S n) + n) in fromNat y
 
 -- ◆定理1.5 巡回群の部分群は巡回群である
@@ -140,14 +139,16 @@ invModNFb Z     (Fb finZ _    ) = absurd finZ
 invModNFb (S _) (Fb _    False) = Fb FZ False
 invModNFb (S k) (Fb finX True ) = Fb (invModN (S k) finX) True
 
-implementation [Mgm] Group (FinBool (S n)) where
-  (<+>) {n = n} = multModNFb (S n)
-  gUnit         = Fb FZ True
-  gInv  {n = n} = invModNFb (S n)
-  vAssoc l c r  = ?rhs4
-  vUnit    c    = ?rhs5
-  vInv     c    = ?rhs6
+implementation [Mgm] Group (FinBool n) where
+  (<+>) {n = n}     = multModNFb n
+  gUnit {n = Z    } = idris_crash "no constructor!"
+  gUnit {n = (S n)} = Fb FZ True
+  gInv  {n = n}     = invModNFb n
+  vAssoc l c r      = ?rhs4
+  vUnit    c        = ?rhs5
+  vInv     c        = ?rhs6
 -- ----------------------------------
+
 
 -- 群の直積
 implementation [GPr] (Group a, Group b) => Group (a, b) where
@@ -161,48 +162,37 @@ implementation [GPr] (Group a, Group b) => Group (a, b) where
 
 
 -- ◆定理1.9 (Z/(p^e)(q^f)Z)* ≡ (Z/(p^e)Z)* × (Z/(q^f)Z)*
--- S (mult k (S n) + n) = (S k) * (S n)
--- S (mult p (S (pred (power (S p) e))) + (pred (power (S p) e))) = power (S p) (S e)
----power (S p) (S e)
----  = mult (S p) $ power (S p) e
----  = mult (S p) $ (S (pred (power (S p) e)))
----  = S (mult p (S (pred (power (S p) e))) + (pred (power (S p) e)))
--- S (mult p (power (S p) e) + (pred (power (S p) e)))
--- S (mult q (power (S q) f) + (pred (power (S q) f)))
--- S (mult (mult p (power (S p) e) + (pred (power (S p) e))) (S (mult q (power (S q) f) + (pred (power (S q) f)))) + (mult q (power (S q) f) + (pred (power (S q) f))))
-fFinBoolToGPr : (FinBool (S (mult (mult p (power (S p) e) + (pred (power (S p) e))) (S (mult q (power (S q) f) + (pred (power (S q) f)))) + (mult q (power (S q) f) + (pred (power (S q) f))))))
-  -> (Fin (S (mult p (power (S p) e) + (pred (power (S p) e)))), Fin (S (mult q (power (S q) f) + (pred (power (S q) f)))))
+fFinBoolToGPr : (FinBool ((power (S p) (S e))*(power (S q) (S f))))
+  -> (Fin (power (S p) (S e)), Fin (power (S q) (S f)))
 theorem1_9 : (p, q, e, f : Nat)
-  -> Group (Fin (S (mult p (power (S p) e) + (pred (power (S p) e)))))
-    -> Group (Fin (S (mult q (power (S q) f) + (pred (power (S q) f)))))
+  -> Group (Fin (power (S p) (S e)))
+    -> Group (Fin (power (S q) (S f)))
       -> Iso
-           (FinBool (S (mult (mult p (power (S p) e) + (pred (power (S p) e))) (S (mult q (power (S q) f) + (pred (power (S q) f)))) + (mult q (power (S q) f) + (pred (power (S q) f))))))
-           (Fin (S (mult p (power (S p) e) + (pred (power (S p) e)))), Fin (S (mult q (power (S q) f) + (pred (power (S q) f))))) Mgm GPr fFinBoolToGPr
+           (FinBool ((power (S p) (S e))*(power (S q) (S f))))
+           (Fin (power (S p) (S e)), Fin (power (S q) (S f))) Mgm GPr fFinBoolToGPr
 
 -- ◆定理1.18 (Z/2^nZ)*は巡回群の直積に同型である
 -- (Z/2^nZ)* ≡ (Z/2^(n-2)Z) × (Z/2Z)
-fTheorem1_18 : FinBool (S (mult (S Z) (S (pred (power (S (S Z)) (S n)))) + (pred (power (S (S Z)) (S n)))))
-  -> (Fin (S n), Fin (S (S Z)))
+fTheorem1_18 : (FinBool (power 2 (S (S n)))) -> (FinBool (power 2 n), Fin 2)
 theorem1_18 : (n : Nat)
-  -> Group (Fin (S n))
-    -> Group (Fin (S (S Z)))
+  -> Group (FinBool (power 2 n))
+    -> Group (Fin 2)
       -> Iso
-           (FinBool (S (mult (S Z) (S (pred (power (S (S Z)) (S n)))) + (pred (power (S (S Z)) (S n))))))
-           (Fin (S n), Fin (S (S Z))) Mgm GPr fTheorem1_18
+           (FinBool (power 2 (S (S n))))
+           (FinBool (power 2 n), Fin 2) Mgm GPr fTheorem1_18
 
-fTheorem1_19 : FinBool (S (mult (S (S p)) (S (pred (power (S (S (S p))) (S n)))) + (pred (power (S (S (S p))) (S n)))))
-  -> (Fin (S (mult (S (S p)) (S (pred (power (S (S (S p))) n))) + (pred (power (S (S (S p))) n)))), Fin (S (S p)))
 -- ◆定理1.19 (Z/奇素数p^nZ)*は巡回群の直積に同型である
+-- (Z/p^nZ)* ≡ (Z/p^(n-1)Z) × (Z/(p-1)Z)
+fTheorem1_19 : (FinBool (power (S p) (S n))) -> (FinBool (power (S p) n), Fin p)
 theorem1_19 : (p, n : Nat)
-  -> Group (Fin (S (mult (S (S p)) (S (pred (power (S (S (S p))) n))) + (pred (power (S (S (S p))) n)))))
-    -> Group (Fin (S (S p)))
+  -> Group (FinBool (power (S p) n))
+    -> Group (Fin p)
       -> Iso
-           (FinBool (S (mult (S (S p)) (S (pred (power (S (S (S p))) (S n)))) + (pred (power (S (S (S p))) (S n))))))
-           (Fin (S (mult (S (S p)) (S (pred (power (S (S (S p))) n))) + (pred (power (S (S (S p))) n)))), Fin (S (S p))) Mgm GPr fTheorem1_19
+           (FinBool (power (S p) (S n)))
+           (FinBool (power (S p) n), Fin p) Mgm GPr fTheorem1_19
 
 -- ◆定理1.20 既約剰余類群は巡回群の直積に同型である
 --mgmProduct :
-
 
 
 
