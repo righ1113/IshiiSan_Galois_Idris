@@ -1,4 +1,4 @@
-module GaloisCap1
+module GaloisCh1
 
 -- > idris -p base
 import Data.Fin
